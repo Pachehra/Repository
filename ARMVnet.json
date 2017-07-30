@@ -1,0 +1,48 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+  },
+  "variables": {
+    "ARMVnet1Prefix": "10.0.0.0/16",
+    "ARMVnet1Subnet1Name": "Subnet-1",
+    "ARMVnet1Subnet1Prefix": "10.0.0.0/24",
+    "ARMVnet1Subnet2Name": "Subnet-2",
+    "ARMVnet1Subnet2Prefix": "10.0.1.0/24"
+  },
+  "resources": [
+    {
+      "name": "ARMVnet1",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "ARMVnet1"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('ARMVnet1Prefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('ARMVnet1Subnet1Name')]",
+            "properties": {
+              "addressPrefix": "[variables('ARMVnet1Subnet1Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('ARMVnet1Subnet2Name')]",
+            "properties": {
+              "addressPrefix": "[variables('ARMVnet1Subnet2Prefix')]"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+  }
+}

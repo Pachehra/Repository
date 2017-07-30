@@ -1,0 +1,150 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ARMVM1Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ARMVM1AdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ARMVM1AdminPassword": {
+      "type": "securestring"
+    },
+    "ARMVM1WindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "armst123aup63uogctra4"
+    },
+    "storageAccountResourceGroup": {
+      "type": "string",
+      "defaultValue": "ARMRG3"
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "ARMVnet1"
+    },
+    "virtualNetworkResourceGroup": {
+      "type": "string",
+      "defaultValue": "ARMRG"
+    },
+    "ARMPIPDnsName": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+    "variables": {
+        "ARMVM1ImagePublisher": "MicrosoftWindowsServer",
+        "ARMVM1ImageOffer": "WindowsServer",
+        "ARMVM1OSDiskName": "[concat(parameters('ARMVM1Name'), '-osdisk')]",
+        "ARMVM1VmSize": "Standard_D2_v2",
+        "ARMVM1VnetID": "[resourceId(parameters('virtualNetworkResourceGroup'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+        "ARMVM1SubnetRef": "[concat(variables('ARMVM1VnetID'), '/subnets/', 'Subnet-1')]",
+        "ARMVM1StorageAccountContainerName": "vhds",
+        "ARMVM1NicName": "[concat(parameters('ARMVM1Name'), 'NetworkInterface')]",
+        "ARMPIPName": "[concat(parameters('ARMVM1Name'), '-ARMPIP')]"
+    },
+  "resources": [
+    {
+      "name": "[variables('ARMVM1NicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "westus",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('ARMPIPName'))]" ],
+      "tags": {
+        "displayName": "ARMVM1Nic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('ARMVM1SubnetRef')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('ARMPIPName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('ARMVM1Name')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "westus",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('ARMVM1NicName'))]"
+      ],
+      "tags": {
+        "displayName": "ARMVM1"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('ARMVM1VmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('ARMVM1Name')]",
+          "adminUsername": "[parameters('ARMVM1AdminUsername')]",
+          "adminPassword": "[parameters('ARMVM1AdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('ARMVM1ImagePublisher')]",
+            "offer": "[variables('ARMVM1ImageOffer')]",
+            "sku": "[parameters('ARMVM1WindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "ARMVM1OSDisk",
+            "vhd": {
+              "uri": "[concat(reference(resourceId(parameters('storageAccountResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2016-01-01').primaryEndpoints.blob, variables('ARMVM1StorageAccountContainerName'), '/', variables('ARMVM1OSDiskName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('ARMVM1NicName'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[variables('ARMPIPName')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "westus",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "ARMPIP"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('ARMPIPDnsName')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+  }
+}
